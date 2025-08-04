@@ -13,27 +13,28 @@ Clear-Host
 function Mostrar-Advertencia {
     Clear-Host
 
-    $line = "=" * 65
-    $space = " " * 5
+    $ancho = 65
+    $linea = "=" * $ancho
+    $espaciado = " " * 4
 
-    Write-Host $line -ForegroundColor DarkGray
-    Write-Host ("=" + (" " * 63) + "=") -ForegroundColor DarkGray
-    Write-Host ("=      " + "¡¡¡ ADVERTENCIA IMPORTANTE !!!".PadRight(50) + "=") -ForegroundColor Red
-    Write-Host ("=" + (" " * 63) + "=") -ForegroundColor DarkGray
-    Write-Host $line -ForegroundColor DarkGray
+    Write-Host $linea -ForegroundColor DarkGray
+    Write-Host ("=" + (" " * ($ancho - 2)) + "=") -ForegroundColor DarkGray
+    Write-Host ("=   " + "¡¡¡ ADVERTENCIA IMPORTANTE !!!".PadRight($ancho - 8) + "=") -ForegroundColor Red
+    Write-Host ("=" + (" " * ($ancho - 2)) + "=") -ForegroundColor DarkGray
+    Write-Host $linea -ForegroundColor DarkGray
     Write-Host ""
 
-    Write-Host "$space Este script es 100% libre de virus y código malicioso." -ForegroundColor White
-    Write-Host "$space Algunas optimizaciones podrían desactivarse tras actualizar Windows." -ForegroundColor White
-    Write-Host "$space No hace magia: el rendimiento depende de tu hardware y software." -ForegroundColor White
-    Write-Host "$space No nos hacemos responsables por daños o pérdida de datos." -ForegroundColor White
-    Write-Host "$space Se recomienda crear un punto de restauración antes de continuar." -ForegroundColor White
+    Write-Host "$espaciado Este script es 100% libre de virus y código malicioso." -ForegroundColor White
+    Write-Host "$espaciado Algunas optimizaciones podrían desactivarse tras actualizar Windows." -ForegroundColor White
+    Write-Host "$espaciado No hace magia: el rendimiento depende de tu hardware y software." -ForegroundColor White
+    Write-Host "$espaciado No nos hacemos responsables por daños o pérdida de datos." -ForegroundColor White
+    Write-Host "$espaciado Se recomienda crear un punto de restauración antes de continuar." -ForegroundColor White
     Write-Host ""
 
-    Write-Host $line -ForegroundColor DarkGray
-    Write-Host ("=      " + "Presiona cualquier tecla para continuar o Ctrl+C para salir...".PadRight(50) + "=") -ForegroundColor Gray
-    Write-Host ("=" + (" " * 63) + "=") -ForegroundColor DarkGray
-    Write-Host $line -ForegroundColor DarkGray
+    Write-Host $linea -ForegroundColor DarkGray
+    Write-Host ("=   " + "Presiona cualquier tecla para continuar o Ctrl+C para salir...".PadRight($ancho - 8) + "=") -ForegroundColor Gray
+    Write-Host ("=" + (" " * ($ancho - 2)) + "=") -ForegroundColor DarkGray
+    Write-Host $linea -ForegroundColor DarkGray
 
     $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 }
@@ -372,5 +373,6 @@ do {
         }
     }
 } while ($true)
+
 
 
