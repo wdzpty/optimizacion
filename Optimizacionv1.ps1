@@ -12,30 +12,33 @@ Clear-Host
 
 function Mostrar-Advertencia {
     Clear-Host
-
-    $ancho = 65
-    $linea = "=" * $ancho
-    $espaciado = " " * 4
-
-    Write-Host $linea -ForegroundColor DarkGray
-    Write-Host ("=" + (" " * ($ancho - 2)) + "=") -ForegroundColor DarkGray
-    Write-Host ("=   " + "¡¡¡ ADVERTENCIA IMPORTANTE !!!".PadRight($ancho - 8) + "=") -ForegroundColor Red
-    Write-Host ("=" + (" " * ($ancho - 2)) + "=") -ForegroundColor DarkGray
-    Write-Host $linea -ForegroundColor DarkGray
+    
+    $border = "=" * 60
+    $empty_line = "=" + (" " * 58) + "="
+    $padding = " " * 3
+    
+    # Marco superior
+    Write-Host $border -ForegroundColor DarkGray
+    Write-Host $empty_line -ForegroundColor DarkGray
+    Write-Host ("=   === ADVERTENCIA IMPORTANTE ===   =".PadCenter(60, " ")) -ForegroundColor Red
+    Write-Host $empty_line -ForegroundColor DarkGray
+    Write-Host $border -ForegroundColor DarkGray
     Write-Host ""
-
-    Write-Host "$espaciado Este script es 100% libre de virus y código malicioso." -ForegroundColor White
-    Write-Host "$espaciado Algunas optimizaciones podrían desactivarse tras actualizar Windows." -ForegroundColor White
-    Write-Host "$espaciado No hace magia: el rendimiento depende de tu hardware y software." -ForegroundColor White
-    Write-Host "$espaciado No nos hacemos responsables por daños o pérdida de datos." -ForegroundColor White
-    Write-Host "$espaciado Se recomienda crear un punto de restauración antes de continuar." -ForegroundColor White
+    
+    # Contenido
+    Write-Host "$padding Este script es 100% libre de virus y codigo malicioso." -ForegroundColor White
+    Write-Host "$padding Algunas optimizaciones podrian desactivarse tras actualizar Windows." -ForegroundColor White
+    Write-Host "$padding No hace magia: el rendimiento depende de tu hardware y software." -ForegroundColor White
+    Write-Host "$padding No nos hacemos responsables por danos o perdida de datos." -ForegroundColor White
+    Write-Host "$padding Se recomienda crear un punto de restauracion antes de continuar." -ForegroundColor White
     Write-Host ""
-
-    Write-Host $linea -ForegroundColor DarkGray
-    Write-Host ("=   " + "Presiona cualquier tecla para continuar o Ctrl+C para salir...".PadRight($ancho - 8) + "=") -ForegroundColor Gray
-    Write-Host ("=" + (" " * ($ancho - 2)) + "=") -ForegroundColor DarkGray
-    Write-Host $linea -ForegroundColor DarkGray
-
+    
+    # Marco inferior
+    Write-Host $border -ForegroundColor DarkGray
+    Write-Host ("=   " + "Presiona cualquier tecla para continuar...".PadCenter(52) + "   =") -ForegroundColor Gray
+    Write-Host $empty_line -ForegroundColor DarkGray
+    Write-Host $border -ForegroundColor DarkGray
+    
     $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 }
 
@@ -375,6 +378,7 @@ do {
         }
     }
 } while ($true)  # El bucle se rompe con 'exit' en la opción 6
+
 
 
 
