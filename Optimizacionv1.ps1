@@ -13,30 +13,30 @@ Clear-Host
 function Mostrar-Advertencia {
     Clear-Host
 
-    $line = "=" * 65
-    $space = " " * 5
+    $linea = "═" * 74
+    $esp = " " * 4
 
-    Write-Host $line -ForegroundColor DarkGray
-    Write-Host ("=" + (" " * 63) + "=") -ForegroundColor DarkGray
-    Write-Host ("=      " + "⚠ ADVERTENCIA IMPORTANTE ⚠".PadRight(50) + "=") -ForegroundColor Red
-    Write-Host ("=" + (" " * 63) + "=") -ForegroundColor DarkGray
-    Write-Host $line -ForegroundColor DarkGray
+    Write-Host $linea -ForegroundColor DarkGray
+    Write-Host ("║" + (" " * 72) + "║") -ForegroundColor DarkGray
+    Write-Host ("║" + "   ⚠️  ADVERTENCIA IMPORTANTE".PadRight(72) + "║") -ForegroundColor Red
+    Write-Host ("║" + (" " * 72) + "║") -ForegroundColor DarkGray
+    Write-Host $linea -ForegroundColor DarkGray
     Write-Host ""
 
-    Write-Host "$space Este script es 100% libre de virus y codigo malicioso." -ForegroundColor White
-    Write-Host "$space Algunas optimizaciones podrian desactivarse tras actualizar Windows." -ForegroundColor White
-    Write-Host "$space No hace magia: el rendimiento depende de tu hardware y software." -ForegroundColor White
-    Write-Host "$space No nos hacemos responsables por daños o perdida de datos." -ForegroundColor White
-    Write-Host "$space Se recomienda crear un punto de restauracion antes de continuar." -ForegroundColor White
+    Write-Host "$esp✔ Este script es 100% libre de virus y código malicioso." -ForegroundColor White
+    Write-Host "$esp⚠ Algunas optimizaciones pueden revertirse tras actualizar Windows." -ForegroundColor White
+    Write-Host "$esp🚫 No hace magia. El rendimiento final depende del hardware/software de tu equipo." -ForegroundColor White
+    Write-Host "$esp💾 Se recomienda crear un punto de restauración antes de continuar." -ForegroundColor White
+    Write-Host "$esp🧠 Utiliza este script bajo tu propio criterio. No nos hacemos responsables por daños." -ForegroundColor White
     Write-Host ""
 
-    Write-Host $line -ForegroundColor DarkGray
-    Write-Host ("=      " + "Presiona cualquier tecla para continuar o Ctrl+C para salir...".PadRight(50) + "=") -ForegroundColor Gray
-    Write-Host ("=" + (" " * 63) + "=") -ForegroundColor DarkGray
-    Write-Host $line -ForegroundColor DarkGray
+    Write-Host $linea -ForegroundColor DarkGray
+    Write-Host ("║" + "   Presiona cualquier tecla para continuar o Ctrl+C para salir...".PadRight(72) + "║") -ForegroundColor Gray
+    Write-Host $linea -ForegroundColor DarkGray
 
     $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 }
+
 
 function Mostrar-Menu {
     Clear-Host
@@ -373,6 +373,7 @@ do {
         }
     }
 } while ($true)  # El bucle se rompe con 'exit' en la opción 6
+
 
 
 
