@@ -400,12 +400,10 @@ function Optimizar-Windows {
 function Optimizar-Red {
     Clear-Host
     Write-Host ""
-    Write-Host "═══════════════════════════════════════════════════" -ForegroundColor DarkGray
     Write-Host "   OPTIMIZACION AVANZADA DE RED - BY FKN AIDEN" -ForegroundColor Red
-    Write-Host "═══════════════════════════════════════════════════" -ForegroundColor DarkGray
     Write-Host ""
 
-    # Detectar adaptador activo automáticamente
+   # Detectar adaptador activo
     $adapterActivo = Get-NetAdapter | Where-Object { $_.Status -eq "Up" -and $_.HardwareInterface -eq $true } | Select-Object -First 1
     if (!$adapterActivo) {
         Write-Host "No se encontro un adaptador de red activo." -ForegroundColor Red
@@ -415,65 +413,100 @@ function Optimizar-Red {
     $adapterName = $adapterActivo.Name
     Write-Host "Adaptador activo detectado: $adapterName" -ForegroundColor Green
     Write-Host ""
-
-    # Desactivar ahorro de energía
-    Write-Host "Desactivando ahorro de energia en el adaptador..."
-    Disable-NetAdapterPowerManagement -Name $adapterName -ErrorAction SilentlyContinue
-
-    # Desactivar autotuning
-    Write-Host "Desactivando AutoTuning TCP..."
-    netsh interface tcp set global autotuninglevel=disabled
-
-    # Desactivar recepción selectiva
-    Write-Host "Desactivando Recepcion Selectiva (RSS)..."
-    netsh interface tcp set global rss=disabled
-
-    # Activar TCP chimney
-    Write-Host "Activando TCP Chimney Offload..."
-    netsh interface tcp set global chimney=enabled
-
-    # Habilitar ECN
-    Write-Host "Habilitando ECN para reducir perdida de paquetes..."
-    netsh interface tcp set global ecncapability=enabled
-
-    # Ajustar MTU a 1472
-    Write-Host "Ajustando MTU a 1472..."
-    netsh interface ipv4 set subinterface "$adapterName" mtu=1472 store=persistent
-
-    # Activar TCP no delay (Nagle Off)
-    Write-Host "Activando TCPNoDelay (desactivando Nagle)..."
-    Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces\*" -Name TcpAckFrequency, TCPNoDelay -ErrorAction SilentlyContinue | Out-Null
-    Get-ChildItem -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces" | ForEach-Object {
-        New-ItemProperty -Path $_.PsPath -Name "TcpAckFrequency" -PropertyType DWord -Value 1 -Force -ErrorAction SilentlyContinue
-        New-ItemProperty -Path $_.PsPath -Name "TCPNoDelay" -PropertyType DWord -Value 1 -Force -ErrorAction SilentlyContinue
+    
+    # 1. Desactivar ahorro de energía
+    try {
+        Write-Host "Desactivando ahorro de energia en el adaptador..."
+        Disable-NetAdapterPowerManagement -Name $adapterName -ErrorAction Stop
+        Write-Host "Completado" -ForegroundColor Green
+    } catch {
+        Write-Host "Error: $_" -ForegroundColor Red
     }
 
-    # Aumentar tiempo de espera TCP
-    Write-Host "Aumentando tiempo de espera TCP..."
-    netsh int tcp set global delayedack=disabled
+    # 2. Configuraciones TCP (modernas)
+    $tcpSettings = @(
+        @{Name="AutoTuning"; Value="restricted"},
+        @{Name="RSS"; Value="disabled"},
+        @{Name="ECN"; Value="enabled"},
+        @{Name="InitialRTO"; Value="1000"}
+    )
 
-    # Limpiar DNS, renovar IP
-    Write-Host "Limpiando cache DNS y renovando IP..."
-    ipconfig /flushdns
-    ipconfig /release
-    ipconfig /renew
+    foreach ($setting in $tcpSettings) {
+        try {
+            Write-Host "Configurando $($setting.Name)..."
+            netsh int tcp set global $($setting.Name)=$($setting.Value)
+            Write-Host "Completado" -ForegroundColor Green
+        } catch {
+            Write-Host "Error: $_" -ForegroundColor Red
+        }
+    }
 
-    # Establecer DNS rápidos (Cloudflare + Google)
-    Write-Host "Estableciendo DNS rapidos (1.1.1.1 y 8.8.8.8)..."
-    Set-DnsClientServerAddress -InterfaceAlias "$adapterName" -ServerAddresses ("1.1.1.1", "8.8.8.8") -ErrorAction SilentlyContinue
+    # 3. TCPNoDelay (Nagle Off)
+    try {
+        Write-Host "Activando TCPNoDelay..."
+        Get-ChildItem -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces" | ForEach-Object {
+            Set-ItemProperty -Path $_.PsPath -Name "TcpAckFrequency" -Value 1 -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $_.PsPath -Name "TCPNoDelay" -Value 1 -Force -ErrorAction SilentlyContinue
+        }
+        Write-Host "Completado" -ForegroundColor Green
+    } catch {
+        Write-Host "Error: $_" -ForegroundColor Red
+    }
 
-    # Desactivar Teredo e ISATAP
-    Write-Host "Desactivando Teredo e ISATAP..."
-    netsh interface teredo set state disabled
-    netsh interface isatap set state disabled
+        # 4. DNS y IP
+    try {
+        Write-Host "Limpiando cache DNS..."
+        ipconfig /flushdns | Out-Null
+        Write-Host "Completado" -ForegroundColor Green
+        
+        Write-Host "Configurando DNS (Cloudflare + Google)..."
+        Set-DnsClientServerAddress -InterfaceAlias $adapterName -ServerAddresses @("1.1.1.1", "8.8.8.8") -ErrorAction Stop
+        Write-Host "Completado" -ForegroundColor Green
+    } catch {
+        Write-Host "Error: $_" -ForegroundColor Red
+    }
 
-    # Limitar ancho de banda para Windows Update (Delivery Optimization)
-    Write-Host "Limitando uso de red por Windows Update..."
-    reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization" /v DODownloadMode /t REG_DWORD /d 0 /f > $null
+   # Array con todas las optimizaciones a aplicar
+    $optimizations = @(
+        @{
+            Name = "Desactivando Teredo (IPv6 tunneling)";
+            Command = "netsh interface teredo set state disabled";
+            Description = "Mejora seguridad deshabilitando tunelización IPv6 innecesaria"
+        },
+        @{
+            Name = "Deshabilitando ISATAP (IPv6 transitional)";
+            Command = "netsh interface isatap set state disabled";
+            Description = "Elimina protocolo de transicion IPv6 obsoleto"
+        },
+        @{
+            Name = "Limitando ancho de banda para Windows Update";
+            Command = 'reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization" /v DODownloadMode /t REG_DWORD /d 0 /f';
+            Description = "Previene que Updates consuma toda tu conexión"
+        },
+        @{
+            Name = "Desactivando LLMNR (Protocolo de resolucion nombres)";
+            Command = 'reg add "HKLM\Software\Policies\Microsoft\Windows NT\DNSClient" /v EnableMulticast /t REG_DWORD /d 0 /f';
+            Description = "Evita ataques de spoofing y trafico innecesario"
+        }
+    )
 
-    # Desactivar LLMNR
-    Write-Host "Desactivando LLMNR para evitar trafico innecesario..."
-    reg add "HKLM\Software\Policies\Microsoft\Windows NT\DNSClient" /v EnableMulticast /t REG_DWORD /d 0 /f > $null
+    # Bucle para aplicar cada optimización
+    foreach ($opt in $optimizations) {
+        try {
+            Write-Host ""
+            Write-Host " [$($optimizations.IndexOf($opt)+1)/$($optimizations.Count)] $($opt.Name)" -ForegroundColor Yellow
+            Write-Host "$($opt.Description)" -ForegroundColor Gray
+            
+            # Ejecutar el comando
+            Invoke-Expression $opt.Command | Out-Null
+            
+            Write-Host "Configuracion aplicada correctamente" -ForegroundColor Green
+        } catch {
+            Write-Host " Error al aplicar: $_" -ForegroundColor Red
+            Write-Host "! Intenta ejecutar como Administrador si persiste" -ForegroundColor DarkYellow
+        }
+    }
+
 
     Write-Host ""
     Write-Host "Optimizacion de red completada correctamente." -ForegroundColor Green
@@ -697,92 +730,126 @@ function Restaurar-Windows {
 }
 
 function Restaurar-Red {
+    Clear-Host
     Write-Host ""
-    Write-Host "Restaurando configuraciones de red predeterminadas..." -ForegroundColor Yellow
+    Write-Host "   RESTAURACION DE CONFIGURACIONES DE RED - VALORES POR DEFECTO" -ForegroundColor Cyan
+    Write-Host "   Esta función revertirá todas las optimizaciones aplicadas" -ForegroundColor Yellow
     Write-Host ""
 
-    try {
-        # Detectar adaptador activo
-        $adapterActivo = Get-NetAdapter | Where-Object { $_.Status -eq "Up" -and $_.HardwareInterface -eq $true } | Select-Object -First 1
-        if (!$adapterActivo) {
-            Write-Host "No se encontro un adaptador de red activo." -ForegroundColor Red
-            Pause
-            return
+    # Detectar adaptador activo
+    $adapterActivo = Get-NetAdapter | Where-Object { $_.Status -eq "Up" -and $_.HardwareInterface -eq $true } | Select-Object -First 1
+    if (!$adapterActivo) {
+        Write-Host "No se encontro un adaptador de red activo." -ForegroundColor Red
+        Pause
+        return
+    }
+    $adapterName = $adapterActivo.Name
+    Write-Host "Adaptador seleccionado: $adapterName" -ForegroundColor Green
+    Write-Host ""
+
+    # 1. Restaurar configuración TCP global
+    Write-Host "Restaurando configuracioon TCP global..." -ForegroundColor Yellow
+    $tcpDefaults = @(
+        "autotuninglevel=normal",
+        "rss=enabled",
+        "ecncapability=default",
+        "initialrto=3000"
+    )
+
+    foreach ($setting in $tcpDefaults) {
+        try {
+            netsh interface tcp set global $setting | Out-Null
+            Write-Host "$setting" -ForegroundColor Green
+        } catch {
+            Write-Host "Error al restaurar $setting" -ForegroundColor Red
         }
-        $adapterName = $adapterActivo.Name
-        Write-Host "Adaptador detectado: $adapterName" -ForegroundColor Green
-        Write-Host ""
+    }
 
-        # Autotuning
-        Write-Host "Restaurando AutoTuning TCP a 'normal'..."
-        netsh interface tcp set global autotuninglevel=normal
-
-        # RSS
-        Write-Host "Restaurando Recepcion Selectiva (RSS)..."
-        netsh interface tcp set global rss=enabled
-
-        # Chimney Offload
-        Write-Host "Restaurando TCP Chimney Offload (automatic)..."
-        netsh interface tcp set global chimney=automatic
-
-        # ECN
-        Write-Host "Restaurando ECN (disabled)..."
-        netsh interface tcp set global ecncapability=disabled
-
-        # Delayed ACK
-        Write-Host "Restaurando ACK retrasado (enabled)..."
-        netsh int tcp set global delayedack=enabled
-
-        # MTU
-        Write-Host "Restaurando MTU a 1500..."
+    # 2. Restaurar MTU
+    try {
+        Write-Host "Restaurando MTU a valor por defecto (1500)..." -ForegroundColor Yellow
         netsh interface ipv4 set subinterface "$adapterName" mtu=1500 store=persistent
+        Write-Host "MTU restaurado" -ForegroundColor Green
+    } catch {
+        Write-Host "Error al restaurar MTU" -ForegroundColor Red
+    }
 
-        # TCPNoDelay / TcpAckFrequency
-        Write-Host "Restaurando Nagle (eliminando TcpNoDelay y TcpAckFrequency)..."
-        Get-ChildItem "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces" | ForEach-Object {
+    # 3. Restaurar DNS a DHCP
+    try {
+        Write-Host "Restaurando DNS automatico (DHCP)..." -ForegroundColor Yellow
+        Set-DnsClientServerAddress -InterfaceAlias $adapterName -ResetServerAddresses
+        Write-Host "DNS restaurado" -ForegroundColor Green
+    } catch {
+        Write-Host "Error al restaurar DNS" -ForegroundColor Red
+    }
+
+    # 4. Restaurar Nagle Algorithm (TCPNoDelay)
+    try {
+        Write-Host "Restaurando algoritmo de Nagle..." -ForegroundColor Yellow
+        Get-ChildItem -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces" | ForEach-Object {
             Remove-ItemProperty -Path $_.PsPath -Name "TcpAckFrequency" -ErrorAction SilentlyContinue
             Remove-ItemProperty -Path $_.PsPath -Name "TCPNoDelay" -ErrorAction SilentlyContinue
         }
-
-        # Restaurar DNS automático
-        Write-Host "Restaurando configuracion automatica de DNS..."
-        Set-DnsClientServerAddress -InterfaceAlias "$adapterName" -ResetServerAddresses -ErrorAction SilentlyContinue
-
-        # Restaurar configuración de energía
-        Write-Host "Restaurando ahorro de energia en el adaptador..."
-        Enable-NetAdapterPowerManagement -Name "$adapterName" -ErrorAction SilentlyContinue
-
-        # Restaurar configuración de QoS
-        Write-Host "Restaurando configuraciin de QoS..."
-        Remove-NetQosFlow -All -ErrorAction SilentlyContinue
-
-        # Teredo e ISATAP
-        Write-Host "Activando Teredo e ISATAP (default)..."
-        netsh interface teredo set state default
-        netsh interface isatap set state enabled
-
-        # Delivery Optimization
-        Write-Host "Restaurando configuracion de Delivery Optimization..."
-        reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization" /f > $null 2>&1
-
-        # Restaurar LLMNR
-        Write-Host "Restaurando LLMNR (enabled)..."
-        reg delete "HKLM\Software\Policies\Microsoft\Windows NT\DNSClient" /v EnableMulticast /f > $null 2>&1
-
-        # Renovar IP y limpiar DNS
-        Write-Host "Renovando IP y limpiando cache DNS..."
-        ipconfig /release
-        ipconfig /renew
-        ipconfig /flushdns
-
-        Write-Host ""
-        Write-Host "Restauracion de configuracion de red completada." -ForegroundColor Green
-    }
-    catch {
-        Write-Host ""
-        Write-Host "Error durante la restauracion de red: $_" -ForegroundColor Red
+        Write-Host "Configuracion TCP restaurada" -ForegroundColor Green
+    } catch {
+        Write-Host "Error al restaurar configuracion TCP" -ForegroundColor Red
     }
 
+    # 5. Reactivar protocolos
+    $protocolos = @(
+        @{Name="Teredo"; Command="netsh interface teredo set state default"},
+        @{Name="ISATAP"; Command="netsh interface isatap set state enabled"}
+    )
+
+    foreach ($proto in $protocolos) {
+        try {
+            Write-Host "Restaurando $($proto.Name)..." -ForegroundColor Yellow
+            Invoke-Expression $proto.Command | Out-Null
+            Write-Host "$($proto.Name) restaurado" -ForegroundColor Green
+        } catch {
+            Write-Host "Error al restaurar $($proto.Name)" -ForegroundColor Red
+        }
+    }
+
+    # 6. Restaurar configuración de Windows Update
+    try {
+        Write-Host "Restaurando configuracion de Windows Update..." -ForegroundColor Yellow
+        Remove-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization" -Name "DODownloadMode" -ErrorAction SilentlyContinue
+        Write-Host "Optimizacion de updates restaurada" -ForegroundColor Green
+    } catch {
+        Write-Host "Error al restaurar configuracion de updates" -ForegroundColor Red
+    }
+
+    # 7. Reactivar LLMNR
+    try {
+        Write-Host "Restaurando LLMNR..." -ForegroundColor Yellow
+        Remove-ItemProperty -Path "HKLM\Software\Policies\Microsoft\Windows NT\DNSClient" -Name "EnableMulticast" -ErrorAction SilentlyContinue
+        Write-Host "LLMNR reactivado" -ForegroundColor Green
+    } catch {
+        Write-Host "Error al reactivar LLMNR" -ForegroundColor Red
+    }
+
+    # 8. Restaurar power management
+    try {
+        Write-Host "Restaurando configuracion de energia..." -ForegroundColor Yellow
+        Enable-NetAdapterPowerManagement -Name $adapterName -ErrorAction SilentlyContinue
+        Write-Host "Configuracion de energia restaurada" -ForegroundColor Green
+    } catch {
+        Write-Host "Error al restaurar configuracion de energia" -ForegroundColor Red
+    }
+
+    Write-Host ""
+    Write-Host "Restauracion completada:" -ForegroundColor Cyan
+    Write-Host "Todas las configuraciones de red fueron restauradas a valores por defecto" -ForegroundColor Green
+    Write-Host "Reinicia tu equipo para aplicar todos los cambios completamente" -ForegroundColor Yellow
+    Write-Host ""
+    
+    # Limpiar y renovar IP
+    Write-Host "Limpiando configuracion de red..." -ForegroundColor Yellow
+    ipconfig /flushdns | Out-Null
+    ipconfig /release | Out-Null
+    ipconfig /renew | Out-Null
+    
     Write-Host ""
     Pause
 }
