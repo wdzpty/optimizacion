@@ -13,30 +13,29 @@ Clear-Host
 function Mostrar-Advertencia {
     Clear-Host
 
-    $linea = "═" * 74
-    $esp = " " * 4
+    # Definir colores
+    $rojo = "Red"
+    $blanco = "White"
+    $gris = "Gray"
 
-    Write-Host $linea -ForegroundColor DarkGray
-    Write-Host ("║" + (" " * 72) + "║") -ForegroundColor DarkGray
-    Write-Host ("║" + "   ⚠️  ADVERTENCIA IMPORTANTE".PadRight(72) + "║") -ForegroundColor Red
-    Write-Host ("║" + (" " * 72) + "║") -ForegroundColor DarkGray
-    Write-Host $linea -ForegroundColor DarkGray
+    Write-Host ""
+    Write-Host "═══════════════════════════════════════════════════════════════════" -ForegroundColor $gris
+    Write-Host "                       ⚠ ADVERTENCIAS IMPORTANTES ⚠" -ForegroundColor $rojo
+    Write-Host "═══════════════════════════════════════════════════════════════════" -ForegroundColor $gris
     Write-Host ""
 
-    Write-Host "$esp✔ Este script es 100% libre de virus y código malicioso." -ForegroundColor White
-    Write-Host "$esp⚠ Algunas optimizaciones pueden revertirse tras actualizar Windows." -ForegroundColor White
-    Write-Host "$esp🚫 No hace magia. El rendimiento final depende del hardware/software de tu equipo." -ForegroundColor White
-    Write-Host "$esp💾 Se recomienda crear un punto de restauración antes de continuar." -ForegroundColor White
-    Write-Host "$esp🧠 Utiliza este script bajo tu propio criterio. No nos hacemos responsables por daños." -ForegroundColor White
+    Write-Host " • Este optimizador es totalmente libre de virus o software malicioso." -ForegroundColor $blanco
+    Write-Host " • Algunas opciones podrían desactivarse tras una actualización de Windows." -ForegroundColor $gris
+    Write-Host " • No hace magia: el rendimiento depende del hardware de tu PC." -ForegroundColor $blanco
+    Write-Host " • Se recomienda crear un punto de restauración antes de continuar." -ForegroundColor $gris
+    Write-Host " • Usa este script bajo tu propio criterio y responsabilidad." -ForegroundColor $blanco
     Write-Host ""
 
-    Write-Host $linea -ForegroundColor DarkGray
-    Write-Host ("║" + "   Presiona cualquier tecla para continuar o Ctrl+C para salir...".PadRight(72) + "║") -ForegroundColor Gray
-    Write-Host $linea -ForegroundColor DarkGray
-
+    Write-Host "═══════════════════════════════════════════════════════════════════" -ForegroundColor $gris
+    Write-Host ""
+    Write-Host " Presiona cualquier tecla para continuar..." -ForegroundColor $rojo
     $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 }
-
 
 function Mostrar-Menu {
     Clear-Host
@@ -373,6 +372,7 @@ do {
         }
     }
 } while ($true)  # El bucle se rompe con 'exit' en la opción 6
+
 
 
 
