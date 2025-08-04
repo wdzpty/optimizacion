@@ -355,9 +355,11 @@ Mostrar-Advertencia
 
 do {
     $seleccion = Mostrar-Menu
-    $seleccion = $seleccion.PadLeft(2, '0')  # normaliza entrada a 2 dígitos
+    
+    # Normaliza la entrada (acepta "6" o "06")
+    $seleccionNormalizada = $seleccion.PadLeft(2, '0')
 
-    switch ($seleccion) {
+    switch ($seleccionNormalizada) {
         "01" { Crear-RestorePoint }
         "02" { Optimizar-CPU }
         "03" { Optimizar-GPU }
@@ -365,14 +367,14 @@ do {
         "05" { Optimizar-Red }
         "06" {
             Write-Host "`nSaliendo del optimizador. Hasta luego." -ForegroundColor Gray
-            exit  # <-- Esto hará que el script termine
+            exit  # <-- Cierra PowerShell completamente
         }
         default {
-            Write-Host "`nOpcion invalida. Por favor selecciona entre 01 y 06." -ForegroundColor Red
+            Write-Host "`nOpción inválida. Por favor selecciona entre 01 y 06." -ForegroundColor Red
             Pause
         }
     }
-} while ($true)
+} while ($true)  # El bucle se rompe con 'exit' en la opción 6
 
 
 
