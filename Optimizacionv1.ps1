@@ -12,7 +12,7 @@ Clear-Host
 
 function Mostrar-Advertencia {
     Clear-Host
-
+    
     # Definir colores
     $rojo = "Red"
     $blanco = "White"
@@ -372,6 +372,7 @@ do {
         }
     }
 } while ($true)  # El bucle se rompe con 'exit' en la opción 6
+
 
 
 
