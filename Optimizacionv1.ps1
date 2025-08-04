@@ -12,26 +12,26 @@ Clear-Host
 
 function Mostrar-Advertencia {
     Clear-Host
-    
+
     # Definir colores
     $rojo = "Red"
     $blanco = "White"
     $gris = "Gray"
 
     Write-Host ""
-    Write-Host "═══════════════════════════════════════════════════════════════════" -ForegroundColor $gris
-    Write-Host "                       ⚠ ADVERTENCIAS IMPORTANTES ⚠" -ForegroundColor $rojo
-    Write-Host "═══════════════════════════════════════════════════════════════════" -ForegroundColor $gris
+    Write-Host "================================================================"-ForegroundColor $gris
+    Write-Host "                     ADVERTENCIAS IMPORTANTES  " -ForegroundColor $rojo
+     Write-Host "================================================================" -ForegroundColor $gris
     Write-Host ""
 
-    Write-Host " • Este optimizador es totalmente libre de virus o software malicioso." -ForegroundColor $blanco
-    Write-Host " • Algunas opciones podrían desactivarse tras una actualización de Windows." -ForegroundColor $gris
-    Write-Host " • No hace magia: el rendimiento depende del hardware de tu PC." -ForegroundColor $blanco
-    Write-Host " • Se recomienda crear un punto de restauración antes de continuar." -ForegroundColor $gris
-    Write-Host " • Usa este script bajo tu propio criterio y responsabilidad." -ForegroundColor $blanco
+    Write-Host " - Este optimizador es totalmente libre de virus o software malicioso." -ForegroundColor $blanco
+    Write-Host " - Algunas opciones podrían desactivarse tras una actualización de Windows." -ForegroundColor $gris
+    Write-Host " - No hace magia: el rendimiento depende del hardware de tu PC." -ForegroundColor $blanco
+    Write-Host " - Se recomienda crear un punto de restauración antes de continuar." -ForegroundColor $gris
+    Write-Host " - Usa este script bajo tu propio criterio y responsabilidad." -ForegroundColor $blanco
     Write-Host ""
 
-    Write-Host "═══════════════════════════════════════════════════════════════════" -ForegroundColor $gris
+    Write-Host "================================================================" -ForegroundColor $gris
     Write-Host ""
     Write-Host " Presiona cualquier tecla para continuar..." -ForegroundColor $rojo
     $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
@@ -372,6 +372,7 @@ do {
         }
     }
 } while ($true)  # El bucle se rompe con 'exit' en la opción 6
+
 
 
 
