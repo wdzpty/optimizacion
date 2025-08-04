@@ -365,14 +365,15 @@ do {
         "05" { Optimizar-Red }
         "06" {
             Write-Host "`nSaliendo del optimizador. Hasta luego." -ForegroundColor Gray
-            break
+            exit  # <-- Esto hará que el script termine
         }
         default {
-            Write-Host "`nOpción inválida. Por favor selecciona entre 01 y 06." -ForegroundColor Red
+            Write-Host "`nOpcion invalida. Por favor selecciona entre 01 y 06." -ForegroundColor Red
             Pause
         }
     }
 } while ($true)
+
 
 
 
