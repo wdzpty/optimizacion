@@ -12,19 +12,33 @@ Clear-Host
 
 function Mostrar-Advertencia {
     Clear-Host
-    Write-Host "=============================================================" -ForegroundColor Yellow
-    Write-Host "                      ADVERTENCIA IMPORTANTE" -ForegroundColor Yellow
-    Write-Host "=============================================================" -ForegroundColor Yellow
+
+    $line = "=" * 65
+    $space = " " * 5
+
+    Write-Host $line -ForegroundColor DarkGray
+    Write-Host ("=" + (" " * 63) + "=") -ForegroundColor DarkGray
+    Write-Host ("=      " + "¡¡¡ ADVERTENCIA IMPORTANTE !!!".PadRight(50) + "=") -ForegroundColor Red
+    Write-Host ("=" + (" " * 63) + "=") -ForegroundColor DarkGray
+    Write-Host $line -ForegroundColor DarkGray
     Write-Host ""
-    Write-Host "Este script es libre de virus y código malicioso." -ForegroundColor White
-    Write-Host "Algunas optimizaciones pueden desactivarse tras actualizar Windows." -ForegroundColor White
-    Write-Host "No hace magia: el rendimiento depende de tu hardware y software." -ForegroundColor White
-    Write-Host "No nos hacemos responsables por daños o pérdida de datos." -ForegroundColor White
-    Write-Host "Se recomienda crear un punto de restauración antes de continuar." -ForegroundColor White
+
+    Write-Host "$space Este script es 100% libre de virus y código malicioso." -ForegroundColor White
+    Write-Host "$space Algunas optimizaciones podrían desactivarse tras actualizar Windows." -ForegroundColor White
+    Write-Host "$space No hace magia: el rendimiento depende de tu hardware y software." -ForegroundColor White
+    Write-Host "$space No nos hacemos responsables por daños o pérdida de datos." -ForegroundColor White
+    Write-Host "$space Se recomienda crear un punto de restauración antes de continuar." -ForegroundColor White
     Write-Host ""
-    Write-Host "Presiona cualquier tecla para continuar o Ctrl+C para salir..." -ForegroundColor Cyan
+
+    Write-Host $line -ForegroundColor DarkGray
+    Write-Host ("=      " + "Presiona cualquier tecla para continuar o Ctrl+C para salir...".PadRight(50) + "=") -ForegroundColor Gray
+    Write-Host ("=" + (" " * 63) + "=") -ForegroundColor DarkGray
+    Write-Host $line -ForegroundColor DarkGray
+
     $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 }
+
+
 function Mostrar-Menu {
     Clear-Host
     Write-Host "================================================================" -ForegroundColor Gray
@@ -340,6 +354,8 @@ Mostrar-Advertencia
 
 do {
     $seleccion = Mostrar-Menu
+    $seleccion = $seleccion.PadLeft(2, '0')  # normaliza entrada a 2 dígitos
+
     switch ($seleccion) {
         "01" { Crear-RestorePoint }
         "02" { Optimizar-CPU }
@@ -356,3 +372,4 @@ do {
         }
     }
 } while ($true)
+
