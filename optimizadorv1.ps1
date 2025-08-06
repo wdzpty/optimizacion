@@ -649,69 +649,76 @@ function Restaurar-GPU {
 
 function Restaurar-Windows {
     Clear-Host
+    Write-Host "-----------------------------------------------------------------------" -ForegroundColor Red
+    Write-Host "          Restauracion del windows a estado predeterminado             " -ForegroundColor White
+    Write-Host "-----------------------------------------------------------------------" -ForegroundColor Red
     Write-Host ""
-    Write-Host "Esta funcion restaurara configuraciones del sistema que fueron modificadas para la optimizacion." -ForegroundColor Yellow
+    Write-Host "Esta funciOn restaurarA configuraciones modificadas por el optimizador." -ForegroundColor White
     Write-Host ""
+
     $confirmacion = Read-Host "Deseas continuar con la restauracion de Windows? (S/N)"
-    Write-Host ""
-    if ($confirmacion -ne 'S' -and $confirmacion -ne 's') {
+    if ($confirmacion -notin @('S','s')) {
+        Write-Host ""
         Write-Host "Operacion cancelada por el usuario." -ForegroundColor Red
+        Write-Host ""
         return
     }
 
     try {
         Write-Host ""
-        Write-Host "Restaurando configuraciones..." -ForegroundColor Cyan
+        Write-Host "[+] Restaurando configuraciones del sistema..." -ForegroundColor White
 
-        # Restaurar servicios
-        Write-Host "Reactivando servicios importantes..."
+        # Restaurar servicios importantes
+        Write-Host "  -> Reactivando servicios esenciales..." -ForegroundColor White
         $servicios = @(
-            "DiagTrack", "WSearch", "SysMain", "RetailDemo", "WMPNetworkSvc", "HomeGroupListener", "HomeGroupProvider", "OneSyncSvc", "TrkWks"
+            "DiagTrack", "WSearch", "SysMain", "RetailDemo",
+            "WMPNetworkSvc", "HomeGroupListener", "HomeGroupProvider",
+            "OneSyncSvc", "TrkWks"
         )
         foreach ($serv in $servicios) {
             Set-Service -Name $serv -StartupType Automatic -ErrorAction SilentlyContinue
             Start-Service -Name $serv -ErrorAction SilentlyContinue
         }
 
-        # Restaurar efectos visuales por defecto
-        Write-Host "Restaurando efectos visuales..."
+        # Restaurar efectos visuales
+        Write-Host "  -> Restaurando efectos visuales por defecto..." -ForegroundColor White
         reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" /v VisualFXSetting /t REG_DWORD /d 0 /f > $null
         reg add "HKCU\Control Panel\Desktop" /v UserPreferencesMask /t REG_BINARY /d 9e1e078012000000 /f > $null
 
-        # Restaurar plan de energia balanceado
-        Write-Host "Restaurando plan de energia a Balanceado..."
+        # Restaurar plan de energía
+        Write-Host "  -> Restaurando plan de energia: Balanceado..." -ForegroundColor White
         powercfg -setactive SCHEME_BALANCED > $null
 
-        # Restaurar telemetría y privacidad
-        Write-Host "Reactivando telemetría y seguimiento..."
+        # Restaurar configuración de telemetría y privacidad
+        Write-Host "  -> Reactivando telemetria y seguimiento..." -ForegroundColor White
         reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection" /f > $null
         reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /f > $null
         reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Privacy" /f > $null
 
         # Restaurar ubicación
-        Write-Host "Reactivando ubicacion..."
+        Write-Host "  -> Restaurando configuracion de ubicacion..." -ForegroundColor White
         reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors" /f > $null
 
-        # Restaurar WiFi Sense, Storage Sense, Game DVR
-        Write-Host "Reactivando WiFi Sense y otras opciones..."
+        # Restaurar configuraciones relacionadas
+        Write-Host "  -> Restaurando WiFi Sense, Game DVR y Storage Sense..." -ForegroundColor White
         reg delete "HKLM\SOFTWARE\Microsoft\PolicyManager\default\WiFi\AllowWiFiSense" /f > $null
         reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy" /f > $null
         reg delete "HKCU\System\GameConfigStore" /f > $null
 
         # Restaurar apps en segundo plano
-        Write-Host "Reactivando aplicaciones en segundo plano..."
+        Write-Host "  -> Reactivando aplicaciones en segundo plano..." -ForegroundColor White
         reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" /f > $null
 
-        # Restaurar miniaturas y suavizado
-        Write-Host "Restaurando miniaturas y suavizado de fuentes..."
+        # Restaurar miniaturas y suavizado de fuentes
+        Write-Host "  -> Restaurando miniaturas y suavizado de fuentes..." -ForegroundColor White
         reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v IconsOnly /t REG_DWORD /d 1 /f > $null
         reg add "HKCU\Control Panel\Desktop" /v FontSmoothing /t REG_SZ /d 2 /f > $null
 
-        # Refrescar configuración visual
+        # Forzar actualización de parámetros visuales
         rundll32.exe user32.dll,UpdatePerUserSystemParameters
 
         Write-Host ""
-        Write-Host "Restauracion de Windows completada con exito." -ForegroundColor Green
+        Write-Host "Restauracion de Windows completada con exito." -ForegroundColor Red
     }
     catch {
         Write-Host ""
@@ -720,6 +727,7 @@ function Restaurar-Windows {
 
     Pause
 }
+
 
 function Restaurar-Red {
     Clear-Host
