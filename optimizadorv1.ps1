@@ -305,23 +305,29 @@ function Optimizar-Windows {
     }
 
     try {
-        Write-Host ""  # linea en blanco
+        Write-Host ""
         Write-Host "Iniciando optimizacion..." -ForegroundColor Red
 
-        # ARCHIVOS TEMPORALES Y CACHÉ
-        Write-Host ""  # linea en blanco
-        Write-Host "Eliminando archivos temporales..." -ForegroundColor Gray
-        Write-Host ""  # linea en blanco
+        # ARCHIVOS TEMPORALES
+        Write-Host "`nEliminando archivos temporales..." -ForegroundColor Gray
         Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
         Remove-Item -Path "C:\Windows\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
         Remove-Item -Path "$env:windir\Prefetch\*" -Recurse -Force -ErrorAction SilentlyContinue
 
-        # RENDIMIENTO VISUAL
-        Write-Host "Ajustando efectos visuales para rendimiento..."
-        reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" /v VisualFXSetting /t REG_DWORD /d 2 /f > $null
-        reg add "HKCU\Control Panel\Desktop" /v UserPreferencesMask /t REG_BINARY /d 9012038010000000 /f > $null
+        # EFECTOS VISUALES AVANZADOS
+        Write-Host "Ajustando efectos visuales para mejor rendimiento..."
+        reg add "HKCU\Control Panel\Desktop" /v DragFullWindows /t REG_SZ /d 0 /f > $null
+        reg add "HKCU\Control Panel\Desktop" /v MenuShowDelay /t REG_SZ /d 200 /f > $null
+        reg add "HKCU\Control Panel\Desktop\WindowMetrics" /v MinAnimate /t REG_SZ /d 0 /f > $null
+        reg add "HKCU\Control Panel\Keyboard" /v KeyboardDelay /t REG_SZ /d 0 /f > $null
+        reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ListviewAlphaSelect /t REG_DWORD /d 0 /f > $null
+        reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ListviewShadow /t REG_DWORD /d 0 /f > $null
+        reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarAnimations /t REG_DWORD /d 0 /f > $null
+        reg add "HKCU\Software\Microsoft\Windows\DWM" /v EnableAeroPeek /t REG_DWORD /d 0 /f > $null
+        reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ShowTaskViewButton /t REG_DWORD /d 0 /f > $null
+        reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Search" /v SearchboxTaskbarMode /t REG_DWORD /d 0 /f > $null
 
-        # PLAN DE ENERGÍA MÁXIMO RENDIMIENTO
+        # PLAN DE ENERGÍA
         Write-Host "Estableciendo plan de energia de maximo rendimiento..."
         powercfg -setactive SCHEME_MIN > $null
         powercfg -setacvalueindex SCHEME_MIN SUB_PROCESSOR PROCTHROTTLEMAX 100 > $null
@@ -332,22 +338,23 @@ function Optimizar-Windows {
         reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection" /v AllowTelemetry /t REG_DWORD /d 0 /f > $null
         reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v EnableActivityFeed /t REG_DWORD /d 0 /f > $null
         reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Privacy" /v TailoredExperiencesWithDiagnosticDataEnabled /t REG_DWORD /d 0 /f > $null
-
-        # UBICACIÓN Y TRACKING
-        Write-Host "Desactivando ubicacion y seguimiento..."
         reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors" /v DisableLocation /t REG_DWORD /d 1 /f > $null
 
         # SERVICIOS
         Write-Host "Estableciendo servicios innecesarios como manual o deshabilitado..."
         $servicios = @(
-            "DiagTrack", "WSearch", "SysMain", "RetailDemo", "WMPNetworkSvc", "HomeGroupListener", "HomeGroupProvider", "OneSyncSvc", "TrkWks"
+            "DiagTrack", "WSearch", "SysMain", "RetailDemo", "WMPNetworkSvc",
+            "HomeGroupListener", "HomeGroupProvider", "OneSyncSvc", "TrkWks",
+            "RemoteRegistry", "Fax", "MapsBroker", "XblGameSave", "XboxNetApiSvc"
         )
         foreach ($serv in $servicios) {
-            Set-Service -Name $serv -StartupType Manual -ErrorAction SilentlyContinue
-            Stop-Service -Name $serv -Force -ErrorAction SilentlyContinue
+            try {
+                Stop-Service -Name $serv -Force -ErrorAction SilentlyContinue
+                Set-Service -Name $serv -StartupType Disabled -ErrorAction SilentlyContinue
+            } catch {}
         }
 
-        # EXPLORADOR DE ARCHIVOS
+        # DESACTIVAR EXPLORADOR DE CARPETAS AUTOMATICO
         Write-Host "Desactivando descubrimiento automatico de carpetas..."
         reg add "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell" /v BagMRU Size /t REG_DWORD /d 1 /f > $null
 
@@ -357,41 +364,24 @@ function Optimizar-Windows {
         reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy" /v 01 /t REG_DWORD /d 0 /f > $null
         reg add "HKCU\System\GameConfigStore" /v GameDVR_FSEBehaviorMode /t REG_DWORD /d 2 /f > $null
 
-        # APLICACIONES EN SEGUNDO PLANO
+        # APPS EN SEGUNDO PLANO
         Write-Host "Desactivando apps en segundo plano..."
         reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" /v GlobalUserDisabled /t REG_DWORD /d 1 /f > $null
 
-        # MOSTRAR MINIATURAS Y SUAVIZADO DE FUENTES
-        Write-Host ""  # linea en blanco
-        Write-Host "Ajustando efectos visuales para mejor rendimiento..." -ForegroundColor Red
-        Write-Host ""  # linea en blanco
-
-        # Mostrar vistas en miniatura
+        # MINIATURAS Y SUAVIZADO
+        Write-Host "`nAjustando miniaturas y fuentes..." -ForegroundColor Red
         reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v IconsOnly /t REG_DWORD /d 0 /f > $null
-
-        # Suavizado de fuentes
         reg add "HKCU\Control Panel\Desktop" /v FontSmoothing /t REG_SZ /d 2 /f > $null
 
-        # Configurar para rendimiento personalizado (activar modo rendimiento personalizado)
+        # VISUALFX PERFORMANCE
         $regPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects"
-        reg add "$regPath" /v VisualFXSetting /t REG_DWORD /d 3 /f > $null
-
-        # Aplicar configuración para que Windows use "Ajustar para obtener el mejor rendimiento" 
-        # y luego active solo lo necesario
-        reg add $regPath /v VisualFXSetting /t REG_DWORD /d 2 /f > $null
-
-        # Forzar que Windows reprocese estas configuraciones (refrescar visuales)
+        reg add "$regPath" /v VisualFXSetting /t REG_DWORD /d 2 /f > $null
         rundll32.exe user32.dll,UpdatePerUserSystemParameters
 
-        Write-Host "Miniaturas y suavizado de fuentes ajustados." -ForegroundColor Green
-
-        Write-Host ""  # linea en blanco
-        Write-Host "Todas las optimizaciones de Windows han sido aplicadas correctamente." -ForegroundColor Green
+        Write-Host "`nTodas las optimizaciones de Windows han sido aplicadas correctamente." -ForegroundColor Green
     }
     catch {
-        Write-Host ""  # linea en blanco
-        Write-Host "Se produjo un error durante la optimizacion: $_" -ForegroundColor Red
-        Write-Host ""  # linea en blanco
+        Write-Host "`nSe produjo un error durante la optimizacion: $_" -ForegroundColor Red
     }
 
     Pause
