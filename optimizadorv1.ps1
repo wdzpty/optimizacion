@@ -314,7 +314,7 @@ function Optimizar-Windows {
         Remove-Item -Path "C:\Windows\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
         Remove-Item -Path "$env:windir\Prefetch\*" -Recurse -Force -ErrorAction SilentlyContinue
 
-        # EFECTOS VISUALES AVANZADOS
+        # EFECTOS VISUALES
         Write-Host "Ajustando efectos visuales para mejor rendimiento..."
         reg add "HKCU\Control Panel\Desktop" /v DragFullWindows /t REG_SZ /d 0 /f > $null
         reg add "HKCU\Control Panel\Desktop" /v MenuShowDelay /t REG_SZ /d 200 /f > $null
@@ -327,20 +327,23 @@ function Optimizar-Windows {
         reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ShowTaskViewButton /t REG_DWORD /d 0 /f > $null
         reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Search" /v SearchboxTaskbarMode /t REG_DWORD /d 0 /f > $null
 
-        # PLAN DE ENERGÍA
+        # PLAN DE ENERGIA
         Write-Host "Estableciendo plan de energia de maximo rendimiento..."
         powercfg -setactive SCHEME_MIN > $null
         powercfg -setacvalueindex SCHEME_MIN SUB_PROCESSOR PROCTHROTTLEMAX 100 > $null
         powercfg -setacvalueindex SCHEME_MIN SUB_PROCESSOR PROCTHROTTLEMIN 100 > $null
 
-        # PRIVACIDAD Y TELEMETRÍA
+        # PRIVACIDAD Y TELEMETRIA
         Write-Host "Desactivando telemetria y seguimiento..."
         reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection" /v AllowTelemetry /t REG_DWORD /d 0 /f > $null
         reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v EnableActivityFeed /t REG_DWORD /d 0 /f > $null
         reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Privacy" /v TailoredExperiencesWithDiagnosticDataEnabled /t REG_DWORD /d 0 /f > $null
         reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors" /v DisableLocation /t REG_DWORD /d 1 /f > $null
+        reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\UserProfileEngagement" /v ScoobeSystemSettingEnabled /t REG_DWORD /d 0 /f > $null
+        reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" /v SubscribedContent-338389Enabled /t REG_DWORD /d 0 /f > $null
+        reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" /v SubscribedContent-353698Enabled /t REG_DWORD /d 0 /f > $null
 
-        # SERVICIOS
+        # SERVICIOS INNECESARIOS
         Write-Host "Estableciendo servicios innecesarios como manual o deshabilitado..."
         $servicios = @(
             "DiagTrack", "WSearch", "SysMain", "RetailDemo", "WMPNetworkSvc",
@@ -354,11 +357,11 @@ function Optimizar-Windows {
             } catch {}
         }
 
-        # DESACTIVAR EXPLORADOR DE CARPETAS AUTOMATICO
+        # CARPETAS AUTOMATICAS
         Write-Host "Desactivando descubrimiento automatico de carpetas..."
         reg add "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell" /v BagMRU Size /t REG_DWORD /d 1 /f > $null
 
-        # WIFI SENSE, STORAGE SENSE, FULLSCREEN OPTIMIZACIONES
+        # WIFI SENSE, STORAGE SENSE, GAME DVR
         Write-Host "Desactivando WiFi Sense, Storage Sense, Recall y otros..."
         reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\default\WiFi\AllowWiFiSense" /v value /t REG_DWORD /d 0 /f > $null
         reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy" /v 01 /t REG_DWORD /d 0 /f > $null
@@ -368,14 +371,13 @@ function Optimizar-Windows {
         Write-Host "Desactivando apps en segundo plano..."
         reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" /v GlobalUserDisabled /t REG_DWORD /d 1 /f > $null
 
-        # MINIATURAS Y SUAVIZADO
+        # MINIATURAS Y FUENTES
         Write-Host "`nAjustando miniaturas y fuentes..." -ForegroundColor Red
         reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v IconsOnly /t REG_DWORD /d 0 /f > $null
         reg add "HKCU\Control Panel\Desktop" /v FontSmoothing /t REG_SZ /d 2 /f > $null
 
         # VISUALFX PERFORMANCE
-        $regPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects"
-        reg add "$regPath" /v VisualFXSetting /t REG_DWORD /d 2 /f > $null
+        reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" /v VisualFXSetting /t REG_DWORD /d 2 /f > $null
         rundll32.exe user32.dll,UpdatePerUserSystemParameters
 
         Write-Host "`nTodas las optimizaciones de Windows han sido aplicadas correctamente." -ForegroundColor Green
