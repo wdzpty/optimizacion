@@ -389,13 +389,14 @@ function Optimizar-Windows {
     Pause
 }
 
-function Optimizar-Red {
+function Optimizar-RedUniversal {
     Clear-Host
-    Write-Host ""
-    Write-Host "   OPTIMIZACION AVANZADA DE RED - BY FKN AIDEN" -ForegroundColor Red
+    Write-Host "---------------------------------------------------------------" -ForegroundColor Red
+    Write-Host "             OPTIMIZACION DE RED - BY FKN AIDEN                " -ForegroundColor White
+    Write-Host "---------------------------------------------------------------" -ForegroundColor Red
     Write-Host ""
 
-   # Detectar adaptador activo
+    # 1. Detectar adaptador activo (con validación mejorada)
     $adapterActivo = Get-NetAdapter | Where-Object { $_.Status -eq "Up" -and $_.HardwareInterface -eq $true } | Select-Object -First 1
     if (!$adapterActivo) {
         Write-Host "No se encontro un adaptador de red activo." -ForegroundColor Red
@@ -403,110 +404,114 @@ function Optimizar-Red {
         return
     }
     $adapterName = $adapterActivo.Name
-    Write-Host "Adaptador activo detectado: $adapterName" -ForegroundColor Green
+    $adapterSpeed = ($adapterActivo | Get-NetAdapterAdvancedProperty -RegistryKeyword "*SpeedDuplex").RegistryValue
+    $isWifi = ($adapterActivo.InterfaceDescription -like "*Wireless*" -or $adapterActivo.Name -like "*Wi-Fi*")
+
+    Write-Host "Adaptador detectado: $adapterName" -ForegroundColor White
+    Write-Host "Tipo: $($isWifi ? 'Wi-Fi' : 'Ethernet')" -ForegroundColor White
+    Write-Host "Velocidad: $($adapterSpeed -ge 1000 ? 'Alta (1Gbps+)' : 'Baja/Media (<1Gbps)')" -ForegroundColor White
     Write-Host ""
-    
-    # 1. Desactivar ahorro de energía
-    try {
-        Write-Host "Desactivando ahorro de energia en el adaptador..."
-        Disable-NetAdapterPowerManagement -Name $adapterName -ErrorAction Stop
-        Write-Host "Completado" -ForegroundColor Green
-    } catch {
-        Write-Host "Error: $_" -ForegroundColor Red
-    }
 
-    # 2. Configuraciones TCP (modernas)
-    $tcpSettings = @(
-        @{Name="AutoTuning"; Value="restricted"},
-        @{Name="RSS"; Value="disabled"},
-        @{Name="ECN"; Value="enabled"},
-        @{Name="InitialRTO"; Value="1000"}
-    )
-
-    foreach ($setting in $tcpSettings) {
+    # 2. Desactivar ahorro de energía (si no es una laptop en batería)
+    $powerProfile = Get-WmiObject -Class Win32_Battery | Measure-Object | Select-Object -ExpandProperty Count
+    if ($powerProfile -eq 0 -or (Get-CimInstance -ClassName Win32_Battery).BatteryStatus -eq 2) {
+        Write-Host "PC en bateria: No se desactivara ahorro de energia." -ForegroundColor Red
+    } else {
         try {
-            Write-Host "Configurando $($setting.Name)..."
-            netsh int tcp set global $($setting.Name)=$($setting.Value)
-            Write-Host "Completado" -ForegroundColor Green
+            Write-Host "Desactivando ahorro de energia en el adaptador..."
+            Disable-NetAdapterPowerManagement -Name $adapterName -ErrorAction Stop
+            Write-Host "Completado" -ForegroundColor White
         } catch {
             Write-Host "Error: $_" -ForegroundColor Red
         }
     }
 
-    # 3. TCPNoDelay (Nagle Off)
-    try {
-        Write-Host "Activando TCPNoDelay..."
-        Get-ChildItem -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces" | ForEach-Object {
-            Set-ItemProperty -Path $_.PsPath -Name "TcpAckFrequency" -Value 1 -Force -ErrorAction SilentlyContinue
-            Set-ItemProperty -Path $_.PsPath -Name "TCPNoDelay" -Value 1 -Force -ErrorAction SilentlyContinue
-        }
-        Write-Host "Completado" -ForegroundColor Green
-    } catch {
-        Write-Host "Error: $_" -ForegroundColor Red
+    # 3. Configuraciones TCP (inteligentes según velocidad)
+    $tcpSettings = @(
+        @{Name="AutoTuning"; Value=($adapterSpeed -ge 1000 ? "normal" : "restricted"); Description="Ajuste dinamico de ventana TCP"},
+        @{Name="ECN"; Value="enabled"; Description="Mejora congestión en redes modernas"},
+        @{Name="InitialRTO"; Value="1000"; Description="Reduce tiempo de retransmision"}
+    )
+
+    # Solo desactivar RSS si la red es lenta (<1Gbps)
+    if ($adapterSpeed -lt 1000) {
+        $tcpSettings += @{Name="RSS"; Value="disabled"; Description="Mejor para redes lentas"}
+    } else {
+        $tcpSettings += @{Name="RSS"; Value="enabled"; Description="Optimizado para redes rapidas (1Gbps+)"}
     }
 
-        # 4. DNS y IP
+    foreach ($setting in $tcpSettings) {
+        try {
+            Write-Host "Configurando $($setting.Name) ($($setting.Description))..."
+            netsh int tcp set global $($setting.Name)=$($setting.Value) | Out-Null
+            Write-Host "Valor aplicado: $($setting.Value)" -ForegroundColor White
+        } catch {
+            Write-Host "Error: $_" -ForegroundColor Red
+        }
+    }
+
+    # 4. TCPNoDelay (solo si no es Wi-Fi o el usuario lo fuerza)
+    if (-not $isWifi -or (Read-Host "Forzar TCPNoDelay (recomendado para gaming)? [S/N]") -eq "S") {
+        try {
+            Write-Host "Activando TCPNoDelay (Nagle Off)..."
+            Get-ChildItem -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces" | ForEach-Object {
+                Set-ItemProperty -Path $_.PsPath -Name "TcpAckFrequency" -Value 1 -Force -ErrorAction SilentlyContinue
+                Set-ItemProperty -Path $_.PsPath -Name "TCPNoDelay" -Value 1 -Force -ErrorAction SilentlyContinue
+            }
+            Write-Host "Completado" -ForegroundColor Whie
+        } catch {
+            Write-Host "Error: $_" -ForegroundColor Red
+        }
+    } else {
+        Write-Host "TCPNoDelay no se aplico (puede aumentar latencia en Wi-Fi)." -ForegroundColor White
+    }
+
+    # 5. DNS (usar Cloudflare + Google por defecto, pero con opción personalizada)
+    $customDNS = Read-Host "Usar DNS personalizados? (Dejar vacio para Cloudflare + Google)"
     try {
         Write-Host "Limpiando cache DNS..."
         ipconfig /flushdns | Out-Null
-        Write-Host "Completado" -ForegroundColor Green
-        
-        Write-Host "Configurando DNS (Cloudflare + Google)..."
-        Set-DnsClientServerAddress -InterfaceAlias $adapterName -ServerAddresses @("1.1.1.1", "8.8.8.8") -ErrorAction Stop
-        Write-Host "Completado" -ForegroundColor Green
+        if ($customDNS) {
+            Write-Host "Configurando DNS personalizados: $customDNS"
+            Set-DnsClientServerAddress -InterfaceAlias $adapterName -ServerAddresses $customDNS.Split(',')
+        } else {
+            Write-Host "Configurando DNS (Cloudflare + Google)..."
+            Set-DnsClientServerAddress -InterfaceAlias $adapterName -ServerAddresses @("1.1.1.1", "8.8.8.8")
+        }
+        Write-Host "Completado" -ForegroundColor White
     } catch {
         Write-Host "Error: $_" -ForegroundColor Red
     }
 
-   # Array con todas las optimizaciones a aplicar
+    # 6. Optimizaciones adicionales (seguridad/rendimiento)
     $optimizations = @(
-        @{
-            Name = "Desactivando Teredo (IPv6 tunneling)";
-            Command = "netsh interface teredo set state disabled";
-            Description = "Mejora seguridad deshabilitando tunelización IPv6 innecesaria"
-        },
-        @{
-            Name = "Deshabilitando ISATAP (IPv6 transitional)";
-            Command = "netsh interface isatap set state disabled";
-            Description = "Elimina protocolo de transicion IPv6 obsoleto"
-        },
-        @{
-            Name = "Limitando ancho de banda para Windows Update";
-            Command = 'reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization" /v DODownloadMode /t REG_DWORD /d 0 /f';
-            Description = "Previene que Updates consuma toda tu conexión"
-        },
-        @{
-            Name = "Desactivando LLMNR (Protocolo de resolucion nombres)";
-            Command = 'reg add "HKLM\Software\Policies\Microsoft\Windows NT\DNSClient" /v EnableMulticast /t REG_DWORD /d 0 /f';
-            Description = "Evita ataques de spoofing y trafico innecesario"
-        }
+        @{Name="Desactivar Teredo"; Command="netsh interface teredo set state disabled"; Condition=$true},
+        @{Name="Desactivar ISATAP"; Command="netsh interface isatap set state disabled"; Condition=$true},
+        @{Name="Limitar ancho de banda de Windows Update"; Command='reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization" /v DODownloadMode /t REG_DWORD /d 0 /f'; Condition=$true},
+        @{Name="Desactivar LLMNR"; Command='reg add "HKLM\Software\Policies\Microsoft\Windows NT\DNSClient" /v EnableMulticast /t REG_DWORD /d 0 /f'; Condition=(-not $isWifi)}
     )
 
-    # Bucle para aplicar cada optimización
     foreach ($opt in $optimizations) {
-        try {
-            Write-Host ""
-            Write-Host " [$($optimizations.IndexOf($opt)+1)/$($optimizations.Count)] $($opt.Name)" -ForegroundColor Yellow
-            Write-Host "$($opt.Description)" -ForegroundColor Gray
-            
-            # Ejecutar el comando
-            Invoke-Expression $opt.Command | Out-Null
-            
-            Write-Host "Configuracion aplicada correctamente" -ForegroundColor Green
-        } catch {
-            Write-Host " Error al aplicar: $_" -ForegroundColor Red
-            Write-Host "! Intenta ejecutar como Administrador si persiste" -ForegroundColor DarkYellow
+        if ($opt.Condition) {
+            try {
+                Write-Host ""
+                Write-Host "Aplicando: $($opt.Name)" -ForegroundColor White
+                Invoke-Expression $opt.Command | Out-Null
+                Write-Host "Completado" -ForegroundColor White
+            } catch {
+                Write-Host "Error: $_" -ForegroundColor Red
+            }
+        } else {
+            Write-Host "Saltando: $($opt.Name) (no aplicable)" -ForegroundColor Gray
         }
     }
 
-
     Write-Host ""
-    Write-Host "Optimizacion de red completada correctamente." -ForegroundColor Green
-    Write-Host "Reinicia tu PC para aplicar todos los cambios correctamente." -ForegroundColor Yellow
+    Write-Host "Optimizacion completada." -ForegroundColor White
+    Write-Host "Algunos cambios requieren reinicio (ejecuta 'Restart-Computer' si es necesario)." -ForegroundColor White
     Write-Host ""
     Pause
 }
-
 
 function Restaurar-CPU {
     Write-Host ""  # linea en blanco
