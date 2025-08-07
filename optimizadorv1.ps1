@@ -19,19 +19,19 @@ function Mostrar-Advertencia {
     $gris = "Gray"
 
     Write-Host ""
-    Write-Host "================================================================"-ForegroundColor $gris
-    Write-Host "                     ADVERTENCIAS IMPORTANTES  " -ForegroundColor $rojo
-     Write-Host "================================================================" -ForegroundColor $gris
+    Write-Host "---------------------------------------------------------------------------"-ForegroundColor $gris
+    Write-Host "                     ADVERTENCIAS IMPORTANTES                   " -ForegroundColor $rojo
+    Write-Host "---------------------------------------------------------------------------" -ForegroundColor $gris
     Write-Host ""
 
     Write-Host " - Este optimizador es totalmente libre de virus o software malicioso." -ForegroundColor $blanco
-    Write-Host " - Algunas opciones podrían desactivarse tras una actualización de Windows." -ForegroundColor $gris
+    Write-Host " - Algunas opciones podrian desactivarse tras una actualizacion de Windows." -ForegroundColor $gris
     Write-Host " - No hace magia: el rendimiento depende del hardware de tu PC." -ForegroundColor $blanco
-    Write-Host " - Se recomienda crear un punto de restauración antes de continuar." -ForegroundColor $gris
+    Write-Host " - Se recomienda crear un punto de restauracion antes de continuar." -ForegroundColor $gris
     Write-Host " - Usa este script bajo tu propio criterio y responsabilidad." -ForegroundColor $blanco
     Write-Host ""
 
-    Write-Host "================================================================" -ForegroundColor $gris
+    Write-Host "---------------------------------------------------------------------------" -ForegroundColor $gris
     Write-Host ""
     Write-Host " Presiona cualquier tecla para continuar..." -ForegroundColor $rojo
     $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
@@ -40,9 +40,9 @@ function Mostrar-Advertencia {
 
 function Mostrar-Menu {
     Clear-Host
-    Write-Host "================================================================" -ForegroundColor Gray
+    Write-Host "----------------------------------------------------------------" -ForegroundColor Gray
     Write-Host "              OPTIMIZADOR AVANZADO - BY FKN AIDEN" -ForegroundColor Red
-    Write-Host "================================================================" -ForegroundColor Gray
+    Write-Host "----------------------------------------------------------------" -ForegroundColor Gray
     Write-Host " 01 - Crear punto de restauracion" -ForegroundColor White
     Write-Host " 02 - Optimizar CPU" -ForegroundColor White
     Write-Host " 03 - Optimizar GPU" -ForegroundColor White
@@ -50,7 +50,7 @@ function Mostrar-Menu {
     Write-Host " 05 - Optimizar RED" -ForegroundColor White
     Write-Host " 06 - Restaurar Todo" -ForegroundColor White
     Write-Host " 07 - Salir" -ForegroundColor White
-    Write-Host "================================================================" -ForegroundColor Gray
+    Write-Host "----------------------------------------------------------------" -ForegroundColor Gray
     $opcion = Read-Host "Selecciona una opcion (01-07)"
 
     return $opcion
@@ -59,15 +59,15 @@ function Mostrar-Menu {
 function Mostrar-Menu-Restaurar {
     do {
         Clear-Host
-        Write-Host "=========================================================" -ForegroundColor Gray
-        Write-Host "               MENU DE RESTAURACION DE SISTEMA" -ForegroundColor Red
-        Write-Host "=========================================================" -ForegroundColor Gray
+        Write-Host "---------------------------------------------------------" -ForegroundColor Gray
+        Write-Host "               MENU DE RESTAURACION DE SISTEMA           " -ForegroundColor Red
+        Write-Host "---------------------------------------------------------" -ForegroundColor Gray
         Write-Host " 01 - Restaurar opciones del CPU" -ForegroundColor White
         Write-Host " 02 - Restaurar opciones del GPU" -ForegroundColor White
         Write-Host " 03 - Restaurar opciones de RED" -ForegroundColor White
         Write-Host " 04 - Restaurar opciones de Windows" -ForegroundColor White
         Write-Host " 05 - Volver al menu principal" -ForegroundColor Yellow
-        Write-Host "=========================================================" -ForegroundColor Gray
+        Write-Host "---------------------------------------------------------" -ForegroundColor Gray
         $opcion = Read-Host "Selecciona una opcion (01-05)"
 
         $opcion = $opcion.PadLeft(2, '0')
@@ -75,11 +75,13 @@ function Mostrar-Menu-Restaurar {
         switch ($opcion) {
             "01" { Restaurar-CPU }
             "02" { Restaurar-GPU }
-            "03" { Restaurar-Red }
+            "03" { Restaurar-RedUniversal }
             "04" { Restaurar-Windows }
             "05" { return }  # Salir del submenú y volver al principal
             default {
-                Write-Host "`nOpcion invalida. Selecciona entre 01 y 05." -ForegroundColor Red
+                Write-Host ""
+                Write-Host "Opcion invalida. Selecciona entre 01 y 05." -ForegroundColor Red
+                Write-Host ""
                 Pause
             }
         }
@@ -733,130 +735,159 @@ function Restaurar-Windows {
     Pause
 }
 
+function Restaurar-RedUniversal {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param (
+        [switch]$ForzarRestauracion
+    )
 
-function Restaurar-Red {
     Clear-Host
-    Write-Host ""
-    Write-Host "   RESTAURACION DE CONFIGURACIONES DE RED - VALORES POR DEFECTO" -ForegroundColor Cyan
-    Write-Host "   Esta función revertirá todas las optimizaciones aplicadas" -ForegroundColor Yellow
+    Write-Host "------------------------------------------------------------" -ForegroundColor Red
+    Write-Host "     RESTAURADOR UNIVERSAL DE RED (VALORES POR DEFECTO)     " -ForegroundColor White
+    Write-Host "------------------------------------------------------------" -ForegroundColor Red
+    Write-Host "   Esta funcion revertira todas las optimizaciones aplicadas" -ForegroundColor Gray
+    Write-Host "   [!] Algunos cambios requieren reinicio" -ForegroundColor Red
     Write-Host ""
 
-    # Detectar adaptador activo
-    $adapterActivo = Get-NetAdapter | Where-Object { $_.Status -eq "Up" -and $_.HardwareInterface -eq $true } | Select-Object -First 1
-    if (!$adapterActivo) {
-        Write-Host "No se encontro un adaptador de red activo." -ForegroundColor Red
+    # 1. Detección inteligente del adaptador
+    try {
+        $adapterActivo = Get-NetAdapter -Physical | Where-Object { $_.Status -eq "Up" } | Select-Object -First 1 -ErrorAction Stop
+        if (-not $adapterActivo) {
+            throw "No se encontro adaptador activo"
+        }
+        $adapterName = $adapterActivo.Name
+        $isWifi = ($adapterActivo.InterfaceDescription -match "Wireless|Wi-Fi")
+        
+        Write-Host "Adaptador seleccionado:" -NoNewline
+        Write-Host " $adapterName " -ForegroundColor Green -NoNewline
+        Write-Host "($($isWifi ? 'Wi-Fi' : 'Ethernet'))"
+    } catch {
+        Write-Host "Error: $_" -ForegroundColor Red
         Pause
         return
     }
-    $adapterName = $adapterActivo.Name
-    Write-Host "Adaptador seleccionado: $adapterName" -ForegroundColor Green
-    Write-Host ""
 
-    # 1. Restaurar configuración TCP global
-    Write-Host "Restaurando configuracioon TCP global..." -ForegroundColor Yellow
+    # 2. Confirmación antes de proceder (excepto si se usa -ForzarRestauracion)
+    if (-not $ForzarRestauracion) {
+        $confirmacion = Read-Host "Continuar con la restauracion? [S/N]"
+        if ($confirmacion -ne "S") {
+            Write-Host "Restauracion cancelada" -ForegroundColor Yellow
+            return
+        }
+    }
+
+    # 3. Restaurar configuración TCP global (con valores estándar de Microsoft)
     $tcpDefaults = @(
-        "autotuninglevel=normal",
-        "rss=enabled",
-        "ecncapability=default",
-        "initialrto=3000"
+        @{Name="autotuninglevel"; Value="normal"; Desc="Optimizacion automatica TCP"},
+        @{Name="rss"; Value="enabled"; Desc="Receive Side Scaling"},
+        @{Name="ecncapability"; Value="default"; Desc="Explicit Congestion Notification"},
+        @{Name="initialrto"; Value="3000"; Desc="Tiempo de reintento inicial (ms)"},
+        @{Name="chimney"; Value="disabled"; Desc="Offload TCP (compatibilidad)"}
     )
 
+    Write-Host "`n🔧 Restaurando configuración TCP global..." -ForegroundColor Yellow
     foreach ($setting in $tcpDefaults) {
         try {
-            netsh interface tcp set global $setting | Out-Null
-            Write-Host "$setting" -ForegroundColor Green
+            netsh int tcp set global $($setting.Name)=$($setting.Value) | Out-Null
+            Write-Host "$($setting.Name.PadRight(15)) $($setting.Desc)" -ForegroundColor Gray
         } catch {
-            Write-Host "Error al restaurar $setting" -ForegroundColor Red
+            Write-Host "$($setting.Name): Error al restaurar" -ForegroundColor Red
         }
     }
 
-    # 2. Restaurar MTU
-    try {
-        Write-Host "Restaurando MTU a valor por defecto (1500)..." -ForegroundColor Yellow
-        netsh interface ipv4 set subinterface "$adapterName" mtu=1500 store=persistent
-        Write-Host "MTU restaurado" -ForegroundColor Green
-    } catch {
-        Write-Host "Error al restaurar MTU" -ForegroundColor Red
-    }
+    # 4. Restaurar configuración de interfaz
+    $interfaceSettings = @(
+        @{Action="MTU"; Command="netsh interface ipv4 set subinterface `"$adapterName`" mtu=1500 store=persistent"; Desc="Tamano maximo de paquetes"},
+        @{Action="DNS"; Command="Set-DnsClientServerAddress -InterfaceAlias `"$adapterName`" -ResetServerAddresses"; Desc="Servidores DNS (DHCP)"},
+        @{Action="Energy"; Command="Enable-NetAdapterPowerManagement -Name `"$adapterName`""; Desc="Ahorro de energia"}
+    )
 
-    # 3. Restaurar DNS a DHCP
-    try {
-        Write-Host "Restaurando DNS automatico (DHCP)..." -ForegroundColor Yellow
-        Set-DnsClientServerAddress -InterfaceAlias $adapterName -ResetServerAddresses
-        Write-Host "DNS restaurado" -ForegroundColor Green
-    } catch {
-        Write-Host "Error al restaurar DNS" -ForegroundColor Red
-    }
-
-    # 4. Restaurar Nagle Algorithm (TCPNoDelay)
-    try {
-        Write-Host "Restaurando algoritmo de Nagle..." -ForegroundColor Yellow
-        Get-ChildItem -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces" | ForEach-Object {
-            Remove-ItemProperty -Path $_.PsPath -Name "TcpAckFrequency" -ErrorAction SilentlyContinue
-            Remove-ItemProperty -Path $_.PsPath -Name "TCPNoDelay" -ErrorAction SilentlyContinue
+    foreach ($setting in $interfaceSettings) {
+        try {
+            Write-Host "Restaurando $($setting.Action)..." -ForegroundColor Grey
+            Write-Host ""
+            Invoke-Expression $setting.Command | Out-Null
+            Write-Host "$($setting.Desc)" -ForegroundColor White
+        } catch {
+            Write-Host "Error al restaurar $($setting.Action)" -ForegroundColor Red
         }
-        Write-Host "Configuracion TCP restaurada" -ForegroundColor Green
-    } catch {
-        Write-Host "Error al restaurar configuracion TCP" -ForegroundColor Red
     }
 
-    # 5. Reactivar protocolos
+    # 5. Restaurar configuraciones del registro (Nagle, protocolos, etc.)
+    $registrySettings = @(
+        @{Path="HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces"; Keys=@("TcpAckFrequency", "TCPNoDelay"); Desc="Algoritmo de Nagle"},
+        @{Path="HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization"; Keys=@("DODownloadMode"); Desc="Optimizacion de updates"},
+        @{Path="HKLM\Software\Policies\Microsoft\Windows NT\DNSClient"; Keys=@("EnableMulticast"); Desc="Protocolo LLMNR"}
+    )
+
+    Write-Host ""
+    Write-Host "Restaurando configuraciones del registro..." -ForegroundColor White
+    Write-Host ""
+    foreach ($reg in $registrySettings) {
+        try {
+            if (Test-Path $reg.Path) {
+                foreach ($key in $reg.Keys) {
+                    Remove-ItemProperty -Path $reg.Path -Name $key -ErrorAction SilentlyContinue
+                }
+                Write-Host "$($reg.Desc)" -ForegroundColor White
+            } else {
+                Write-Host "$($reg.Desc): Ruta no encontrada" -ForegroundColor Gray
+            }
+        } catch {
+            Write-Host "Error al restaurar $($reg.Desc)" -ForegroundColor Red
+        }
+    }
+
+    # 6. Reactivar protocolos de red
     $protocolos = @(
-        @{Name="Teredo"; Command="netsh interface teredo set state default"},
-        @{Name="ISATAP"; Command="netsh interface isatap set state enabled"}
+        @{Name="Teredo"; Command="netsh interface teredo set state default"; Desc="Tunelizacion IPv6"},
+        @{Name="ISATAP"; Command="netsh interface isatap set state enabled"; Desc="Transicion IPv6"}
     )
 
     foreach ($proto in $protocolos) {
         try {
-            Write-Host "Restaurando $($proto.Name)..." -ForegroundColor Yellow
+            Write-Host ""
+            Write-Host "Reactivando $($proto.Name)..." -ForegroundColor White
+            Write-Host ""
             Invoke-Expression $proto.Command | Out-Null
-            Write-Host "$($proto.Name) restaurado" -ForegroundColor Green
+            Write-Host "$($proto.Desc)" -ForegroundColor Gray
         } catch {
-            Write-Host "Error al restaurar $($proto.Name)" -ForegroundColor Red
+            Write-Host "Error al reactivar $($proto.Name)" -ForegroundColor Red
         }
     }
 
-    # 6. Restaurar configuración de Windows Update
-    try {
-        Write-Host "Restaurando configuracion de Windows Update..." -ForegroundColor Yellow
-        Remove-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization" -Name "DODownloadMode" -ErrorAction SilentlyContinue
-        Write-Host "Optimizacion de updates restaurada" -ForegroundColor Green
-    } catch {
-        Write-Host "Error al restaurar configuracion de updates" -ForegroundColor Red
-    }
-
-    # 7. Reactivar LLMNR
-    try {
-        Write-Host "Restaurando LLMNR..." -ForegroundColor Yellow
-        Remove-ItemProperty -Path "HKLM\Software\Policies\Microsoft\Windows NT\DNSClient" -Name "EnableMulticast" -ErrorAction SilentlyContinue
-        Write-Host "LLMNR reactivado" -ForegroundColor Green
-    } catch {
-        Write-Host "Error al reactivar LLMNR" -ForegroundColor Red
-    }
-
-    # 8. Restaurar power management
-    try {
-        Write-Host "Restaurando configuracion de energia..." -ForegroundColor Yellow
-        Enable-NetAdapterPowerManagement -Name $adapterName -ErrorAction SilentlyContinue
-        Write-Host "Configuracion de energia restaurada" -ForegroundColor Green
-    } catch {
-        Write-Host "Error al restaurar configuracion de energia" -ForegroundColor Red
-    }
-
+    # 7. Limpieza final
     Write-Host ""
-    Write-Host "Restauracion completada:" -ForegroundColor Cyan
-    Write-Host "Todas las configuraciones de red fueron restauradas a valores por defecto" -ForegroundColor Green
-    Write-Host "Reinicia tu equipo para aplicar todos los cambios completamente" -ForegroundColor Yellow
+    Write-Host "Limpieza final de red..." -ForegroundColor White
+    Write-Host ""
+    $cleanCommands = @(
+        @{Command="ipconfig /flushdns"; Desc="Cache DNS"},
+        @{Command="ipconfig /release"; Desc="Direccion IP"},
+        @{Command="ipconfig /renew"; Desc="Nueva IP"}
+    )
+
+    foreach ($cmd in $cleanCommands) {
+        try {
+            Invoke-Expression $cmd.Command | Out-Null
+            Write-Host "$($cmd.Desc) limpiada" -ForegroundColor White
+        } catch {
+            Write-Host "Error al limpiar $($cmd.Desc)" -ForegroundColor Red
+        }
+    }
+
+    # Resultado final
+    Write-Host ""
+    Write-Host "RESTAURACION COMPLETADA" -ForegroundColor White
+    Write-Host "Algunos cambios requieren reinicio para aplicar completamente" -ForegroundColor White
+    Write-Host "Ejecuta 'Restart-Computer' cuando sea conveniente" -ForegroundColor Gray
     Write-Host ""
     
-    # Limpiar y renovar IP
-    Write-Host "Limpiando configuracion de red..." -ForegroundColor Yellow
-    ipconfig /flushdns | Out-Null
-    ipconfig /release | Out-Null
-    ipconfig /renew | Out-Null
-    
-    Write-Host ""
-    Pause
+    # Opción para reiniciar inmediatamente
+    if ($ForzarRestauracion -or (Read-Host "Reiniciar ahora? [S/N]") -eq "S") {
+        Restart-Computer -Confirm
+    } else {
+        Pause
+    }
 }
 
 # --- EJECUCION ---
@@ -874,7 +905,7 @@ do {
         "02" { Optimizar-CPU }
         "03" { Optimizar-GPU }
         "04" { Optimizar-Windows }
-        "05" { Optimizar-Red }
+        "05" { Optimizar-RedUniversal }
         "06" { Mostrar-Menu-Restaurar }
         "07" {
             Write-Host ""  # línea en blanco
